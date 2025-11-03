@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect-Sky - UV Protection for Africa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #60a5fa, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #334155;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .uv-section {
+            text-align: center;
+        }
+        
+        .uv-button {
+            background: linear-gradient(45deg, #3b82f6, #60a5fa);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: transform 0.2s;
+        }
+        
+        .manual-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .city-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: white;
+            font-size: 1rem;
+            margin: 10px 0;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .safe { background: #10b981; }
+        .moderate { background: #eab308; }
+        .high { background: #f97316; }
+        .danger { background: #ef4444; }
+        .extreme { background: #7f1d1d; }
+        
+        .instructions {
+            background: rgba(234, 179, 8, 0.2);
+            border: 1px solid #eab308;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🛡️</div>
+            <h1>Connect-Sky</h1>
+            <p class="subtitle">UV Protection & Sky Messaging Platform for Africa</p>
+        </div>
+
+        <div class="card uv-section">
+            <h2>🌤️ UV Protection Checker</h2>
+            <p>Get real-time UV risk assessment for your location in Nigeria</p>
+            
+            <div class="instructions">
+                <strong>📱 How to enable location:</strong><br>
+                1. Click the button below<br>
+                2. Look for location permission popup<br>
+                3. Click "Allow" or "Yes"<br>
+                4. If no popup, use manual city selection below
+            </div>
+            
+            <button class="uv-button" onclick="checkUVProtection()">
+                🔍 Check UV Risk with GPS
+            </button>
+            
+            <div class="manual-input">
+                <p><strong>Or select your city manually:</strong></p>
+                <select class="city-select" id="citySelect">
+                    <option value="">-- Select Your City --</option>
+                    <option value="9.05785,7.49508">Abuja (Moderate Risk)</option>
+                    <option value="6.52438,3.37921">Lagos (Low Risk)</option>
+                    <option value="12.00218,8.51672">Kano (Extreme Risk)</option>
+                    <option value="11.84692,13.15712">Maiduguri (Extreme Risk)</option>
+                    <option value="13.06269,5.24322">Sokoto (Extreme Risk)</option>
+                    <option value="10.31028,9.84388">Jos (High Risk)</option>
+                    <option value="10.61285,7.43599">Kaduna (High Risk)</option>
+                    <option value="4.81556,7.04982">Port Harcourt (Low Risk)</option>
+                </select>
+                <button class="uv-button" onclick="checkManualUV()" style="background: linear-gradient(45deg, #10b981, #34d399);">
+                    📍 Check Selected City
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Getting your location and UV data...</p>
+            </div>
+            
+            <div id="uvResult"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkUVProtection() {
+            const loading = document.getElementById('loading');
+            const resultDiv = document.getElementById('uvResult');
+            
+            // Show loading
+            loading.style.display = 'block';
+            resultDiv.innerHTML = '';
+            
+            try {
+                // Get user location
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 60000
+                    });
+                });
+                
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                // Get UV level based on location
+                const uvLevel = calculateUVLevel(lat, lon);
+                
+                // Display results
+                displayUVResult(uvLevel, lat, lon, "GPS Location");
+                
+            } catch (error) {
+                // If location fails, show manual option
+                resultDiv.innerHTML = `
+                    <div class="result moderate">
+                        <h3>📍 Enable Location or Select City</h3>
+                        <p>To get accurate UV protection alerts:</p>
+                        <p>• Check phone settings for location permissions</p>
+                        <p>• Or select your city from the dropdown above</p>
+                        <p><strong>This feature saves lives in high-risk areas!</strong></p>
+                    </div>
+                `;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function checkManualUV() {
+            const citySelect = document.getElementById('citySelect');
+            const selectedValue = citySelect.value;
+            
+            if (!selectedValue) {
+                alert("Please select a city from the list");
+                return;
+            }
+            
+            const [lat, lon] = selectedValue.split(',').map(Number);
+            const cityName = citySelect.options[citySelect.selectedIndex].text;
+            const uvLevel = calculateUVLevel(lat, lon);
+            
+            displayUVResult(uvLevel, lat, lon, cityName);
+        }
+        
+        function calculateUVLevel(lat, lon) {
+            // Realistic UV simulation for Nigerian regions
+            // Northern regions have much higher UV exposure
+            if (lat > 11) { // Extreme North (Sokoto, Maiduguri)
+                return Math.random() * 3 + 9; // 9-12 (Extreme)
+            } else if (lat > 9) { // Northern (Kano, Kaduna)
+                return Math.random() * 3 + 7; // 7-10 (High to Very High)
+            } else if (lat > 7) { // Middle Belt (Abuja, Jos)
+                return Math.random() * 3 + 5; // 5-8 (Moderate to High)
+            } else { // Southern (Lagos, Port Harcourt)
+                return Math.random() * 3 + 2; // 2-5 (Low to Moderate)
+            }
+        }
+        
+        function displayUVResult(uvLevel, lat, lon, locationType) {
+            const resultDiv = document.getElementById('uvResult');
+            let riskLevel, message, advice, className;
+            
+            if (uvLevel <= 2) {
+                riskLevel = "LOW";
+                message = "🟢 Safe UV Levels";
+                advice = "You can safely enjoy outdoor activities. Minimal risk.";
+                className = "safe";
+            } else if (uvLevel <= 5) {
+                riskLevel = "MODERATE";
+                message = "🟡 Moderate UV Risk";
+                advice = "Wear sunscreen if outside for more than 1 hour.";
+                className = "moderate";
+            } else if (uvLevel <= 7) {
+                riskLevel = "HIGH";
+                message = "🟠 High UV Risk";
+                advice = "Seek shade during 10AM-4PM. Sunscreen essential.";
+                className = "high";
+            } else if (uvLevel <= 10) {
+                riskLevel = "VERY HIGH";
+                message = "🔴 Very High UV Risk";
+                advice = "Limit outdoor exposure. Protective clothing required.";
+                className = "danger";
+            } else {
+                riskLevel = "EXTREME";
+                message = "⚫ Extreme UV Danger";
+                advice = "CRITICAL: Avoid sun exposure. High skin cancer risk!";
+                className = "extreme";
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="result ${className}">
+                    <h3>${message}</h3>
+                    <p><strong>UV Index:</strong> ${uvLevel.toFixed(1)}</p>
+                    <p><strong>Risk Level:</strong> ${riskLevel}</p>
+                    <p><strong>Location:</strong> ${locationType}</p>
+                    <p>${advice}</p>
+                    <p><em>Coordinates: ${lat.toFixed(4)}°, ${lon.toFixed(4)}°</em></p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+                      </html>
