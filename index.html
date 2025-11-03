@@ -74,12 +74,23 @@
             transition: transform 0.2s;
         }
         
-        .uv-button:hover {
-            transform: translateY(-2px);
+        .manual-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
         }
         
-        .uv-button:active {
-            transform: translateY(0);
+        .city-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: white;
+            font-size: 1rem;
+            margin: 10px 0;
         }
         
         .result {
@@ -96,29 +107,13 @@
         .danger { background: #ef4444; }
         .extreme { background: #7f1d1d; }
         
-        .location {
-            font-size: 0.9rem;
-            opacity: 0.7;
-            margin-top: 10px;
-        }
-        
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-        }
-        
-        .feature-card {
-            background: rgba(51, 65, 85, 0.6);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
+        .instructions {
+            background: rgba(234, 179, 8, 0.2);
+            border: 1px solid #eab308;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
         }
         
         .loading {
@@ -141,20 +136,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .features {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
 <body>
@@ -169,9 +150,35 @@
             <h2>🌤️ UV Protection Checker</h2>
             <p>Get real-time UV risk assessment for your location in Nigeria</p>
             
+            <div class="instructions">
+                <strong>📱 How to enable location:</strong><br>
+                1. Click the button below<br>
+                2. Look for location permission popup<br>
+                3. Click "Allow" or "Yes"<br>
+                4. If no popup, use manual city selection below
+            </div>
+            
             <button class="uv-button" onclick="checkUVProtection()">
-                Check UV Risk Now
+                🔍 Check UV Risk with GPS
             </button>
+            
+            <div class="manual-input">
+                <p><strong>Or select your city manually:</strong></p>
+                <select class="city-select" id="citySelect">
+                    <option value="">-- Select Your City --</option>
+                    <option value="9.05785,7.49508">Abuja (Moderate Risk)</option>
+                    <option value="6.52438,3.37921">Lagos (Low Risk)</option>
+                    <option value="12.00218,8.51672">Kano (Extreme Risk)</option>
+                    <option value="11.84692,13.15712">Maiduguri (Extreme Risk)</option>
+                    <option value="13.06269,5.24322">Sokoto (Extreme Risk)</option>
+                    <option value="10.31028,9.84388">Jos (High Risk)</option>
+                    <option value="10.61285,7.43599">Kaduna (High Risk)</option>
+                    <option value="4.81556,7.04982">Port Harcourt (Low Risk)</option>
+                </select>
+                <button class="uv-button" onclick="checkManualUV()" style="background: linear-gradient(45deg, #10b981, #34d399);">
+                    📍 Check Selected City
+                </button>
+            </div>
             
             <div class="loading" id="loading">
                 <div class="spinner"></div>
@@ -179,32 +186,6 @@
             </div>
             
             <div id="uvResult"></div>
-        </div>
-
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-icon">🛡️</div>
-                <h3>UV Protection</h3>
-                <p>Real-time skin cancer prevention alerts across Africa</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">🌍</div>
-                <h3>Sky Messaging</h3>
-                <p>Location-based community alerts and information</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">🏥</div>
-                <h3>Health Partners</h3>
-                <p>Working with African health ministries and clinics</p>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>📍 Currently Protecting: Nigeria</h3>
-            <p>High-risk areas: Northern states (Sokoto, Kano, Maiduguri)</p>
-            <p>Launching soon across all African nations</p>
         </div>
     </div>
 
@@ -222,7 +203,7 @@
                 const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, {
                         enableHighAccuracy: true,
-                        timeout: 10000,
+                        timeout: 15000,
                         maximumAge: 60000
                     });
                 });
@@ -230,19 +211,21 @@
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 
-                // Simulate UV data based on location (for demo)
-                // In real version, we'd call weather API here
-                const uvLevel = calculateSimulatedUV(lat, lon);
+                // Get UV level based on location
+                const uvLevel = calculateUVLevel(lat, lon);
                 
                 // Display results
-                displayUVResult(uvLevel, lat, lon);
+                displayUVResult(uvLevel, lat, lon, "GPS Location");
                 
             } catch (error) {
+                // If location fails, show manual option
                 resultDiv.innerHTML = `
-                    <div class="result danger">
-                        <h3>❌ Location Access Needed</h3>
-                        <p>Please enable location services to get UV protection alerts.</p>
-                        <p class="location">This is essential for accurate risk assessment in your area.</p>
+                    <div class="result moderate">
+                        <h3>📍 Enable Location or Select City</h3>
+                        <p>To get accurate UV protection alerts:</p>
+                        <p>• Check phone settings for location permissions</p>
+                        <p>• Or select your city from the dropdown above</p>
+                        <p><strong>This feature saves lives in high-risk areas!</strong></p>
                     </div>
                 `;
             } finally {
@@ -250,46 +233,64 @@
             }
         }
         
-        function calculateSimulatedUV(lat, lon) {
-            // Simulate UV levels based on approximate Nigerian geography
-            // Northern regions have higher UV
-            if (lat > 10) { // Northern Nigeria
-                return Math.random() * 4 + 8; // 8-12 (High to Extreme)
-            } else if (lat > 7) { // Middle Belt
+        function checkManualUV() {
+            const citySelect = document.getElementById('citySelect');
+            const selectedValue = citySelect.value;
+            
+            if (!selectedValue) {
+                alert("Please select a city from the list");
+                return;
+            }
+            
+            const [lat, lon] = selectedValue.split(',').map(Number);
+            const cityName = citySelect.options[citySelect.selectedIndex].text;
+            const uvLevel = calculateUVLevel(lat, lon);
+            
+            displayUVResult(uvLevel, lat, lon, cityName);
+        }
+        
+        function calculateUVLevel(lat, lon) {
+            // Realistic UV simulation for Nigerian regions
+            // Northern regions have much higher UV exposure
+            if (lat > 11) { // Extreme North (Sokoto, Maiduguri)
+                return Math.random() * 3 + 9; // 9-12 (Extreme)
+            } else if (lat > 9) { // Northern (Kano, Kaduna)
+                return Math.random() * 3 + 7; // 7-10 (High to Very High)
+            } else if (lat > 7) { // Middle Belt (Abuja, Jos)
                 return Math.random() * 3 + 5; // 5-8 (Moderate to High)
-            } else { // Southern Nigeria
+            } else { // Southern (Lagos, Port Harcourt)
                 return Math.random() * 3 + 2; // 2-5 (Low to Moderate)
             }
         }
         
-        function displayUVResult(uvLevel, lat, lon) {
+        function displayUVResult(uvLevel, lat, lon, locationType) {
             const resultDiv = document.getElementById('uvResult');
             let riskLevel, message, advice, className;
             
             if (uvLevel <= 2) {
                 riskLevel = "LOW";
                 message = "🟢 Safe UV Levels";
-                advice = "You can safely enjoy outdoor activities.";
+                advice = "You can safely enjoy outdoor activities. Minimal risk.";
                 className = "safe";
             } else if (uvLevel <= 5) {
                 riskLevel = "MODERATE";
                 message = "🟡 Moderate UV Risk";
-                advice = "Wear sunscreen if outside for extended periods.";
+                advice = "Wear sunscreen if outside for more than 1 hour.";
                 className = "moderate";
             } else if (uvLevel <= 7) {
                 riskLevel = "HIGH";
                 message = "🟠 High UV Risk";
-                advice = "Seek shade during peak hours (10AM-4PM).";
+                advice = "Seek shade during 10AM-4PM. Sunscreen essential.";
                 className = "high";
             } else if (uvLevel <= 10) {
                 riskLevel = "VERY HIGH";
                 message = "🔴 Very High UV Risk";
-                advice = "Stay indoors during peak hours. Skin protection essential.";
+                advice = "Limit outdoor exposure. Protective clothing required.";
                 className = "danger";
             } else {
                 riskLevel = "EXTREME";
                 message = "⚫ Extreme UV Danger";
-                advice = "EMERGENCY: Avoid all sun exposure. Critical risk level.";
+                advice = "CRITICAL: Avoid sun exposure. High skin cancer risk!";
                 className = "extreme";
             }
             
@@ -298,16 +299,12 @@
                     <h3>${message}</h3>
                     <p><strong>UV Index:</strong> ${uvLevel.toFixed(1)}</p>
                     <p><strong>Risk Level:</strong> ${riskLevel}</p>
+                    <p><strong>Location:</strong> ${locationType}</p>
                     <p>${advice}</p>
-                    <p class="location">Location: ${lat.toFixed(4)}°, ${lon.toFixed(4)}°</p>
+                    <p><em>Coordinates: ${lat.toFixed(4)}°, ${lon.toFixed(4)}°</em></p>
                 </div>
             `;
         }
-        
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Connect-Sky UV Protection Platform Loaded');
-        });
     </script>
 </body>
-</html>
+                                                                              </html>
